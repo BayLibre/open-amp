@@ -8,6 +8,7 @@ multiplies them and returns the result to the master core. */
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <openamp/open_amp.h>
 #include "matrix_multiply.h"
 #include "platform_info.h"
