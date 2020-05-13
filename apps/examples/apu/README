@@ -1,0 +1,7 @@
+To build the firmware, please follow regular instruction to build openamp examples.
+
+To build the host test application, run the following command:
+```
+cd host
+CROSS_COMPILE=aarch64-linux-gnu- make
+```
