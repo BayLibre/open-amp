@@ -10,3 +10,5 @@ endif (WITH_LOAD_FW)
 if (WITH_PROXY_APPS)
 add_subdirectory (rpc_demo)
 endif (WITH_PROXY_APPS)
+
+add_subdirectory(apu)
