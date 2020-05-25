@@ -20,7 +20,7 @@ static struct remoteproc rproc_inst;
 
 static struct remoteproc * platform_create_proc(int proc_index, int rsc_index)
 {
-	void *rsc_table;
+	struct remote_resource_table *rsc_table;
 	int rsc_size;
 	int ret;
 	metal_phys_addr_t pa;
@@ -40,17 +40,35 @@ static struct remoteproc * platform_create_proc(int proc_index, int rsc_index)
 	da = (metal_phys_addr_t)rsc_table;
 	(void *)remoteproc_mmap(&rproc_inst, &pa, &da, rsc_size, 0, NULL);
 
-	/*
-	 * Disable the cache management in order to ease the development.
-	 * TODO: Only disable the cache for some zone in order to get better
-	 *       performances.
-	 */
-	xthal_set_region_attribute((void *)da,
-				   0x10000000,
+	/* Set writeback mode by default for the SRAM */
+	xthal_set_region_attribute(&_memmap_mem_sram_start,
+				   (uint32_t)&_memmap_mem_sram_end - (uint32_t)&_memmap_mem_sram_start,
+				   XCHAL_CA_WRITEBACK, 0);
+
+	/* Disable cache for the resource table, which is shared with the CPU */
+	xthal_set_region_attribute(&_resource_table_start,
+				   (uint32_t)&_resource_table_end - (uint32_t)&_resource_table_start,
 				   XCHAL_CA_BYPASS, 0);
 
+	/* Disable cache for vring / rproc shared memory */
+	xthal_set_region_attribute((void *) rsc_table->vdev0buffer_hdr.da,
+				   rsc_table->vdev0buffer_hdr.len,
+				   XCHAL_CA_BYPASS, 0);
+	xthal_set_region_attribute((void *) rsc_table->vdev0ring0_hdr.da,
+				   rsc_table->vdev0ring0_hdr.len,
+				   XCHAL_CA_BYPASS, 0);
+	xthal_set_region_attribute((void *) rsc_table->vdev0ring1_hdr.da,
+				   rsc_table->vdev0ring1_hdr.len,
+				   XCHAL_CA_BYPASS, 0);
+
+	/* Set writethrough mode for the log buffer */
+	xthal_set_region_attribute((void *) rsc_table->logbuf_hdr.da,
+				   rsc_table->logbuf_hdr.len,
+				   XCHAL_CA_WRITETHRU, 0);
+
 	/* parse resource table to remoteproc */
-	ret = remoteproc_set_rsc_table(&rproc_inst, rsc_table, rsc_size);
+	ret = remoteproc_set_rsc_table(&rproc_inst, (void *)rsc_table,
+				       rsc_size);
 	if (ret) {
 		metal_log(METAL_LOG_ERROR,
 			  "Failed to intialize remoteproc\n");

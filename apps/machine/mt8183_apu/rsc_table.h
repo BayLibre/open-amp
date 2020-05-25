@@ -46,6 +46,8 @@ extern "C" {
 extern uint32_t _memmap_mem_srom_start;
 extern uint32_t _memmap_mem_sram_start;
 extern uint32_t _memmap_mem_sram_end;
+extern uint32_t _resource_table_start;
+extern uint32_t _resource_table_end;
 extern uint32_t _log_start;
 extern uint32_t _vdev_start;
 extern uint32_t _vdev_end;
