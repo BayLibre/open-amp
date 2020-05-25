@@ -19,25 +19,23 @@ extern "C" {
 #define IOMMU_NOEXEC		(1 << 3)
 #define IOMMU_MMIO		(1 << 4)
 
-#define NO_RESOURCE_ENTRIES         11
+#define NO_RESOURCE_ENTRIES         10
 
 #define KB			(1024)
 #define MB			(KB * KB)
 #define SRAM_TOTAL_SIZE		(256 * MB)
 #define SROM_SIZE		(2 * MB) /* Defined in memmap.xmm */
 #define SRAM_SIZE		(1 * MB) /* Defined in memmap.xmm */
-#define LOG_BUFFER_SIZE		(1 * MB)
-#define COMM_BUFFER_SIZE	(4 * KB)
+#define LOG_BUFFER_SIZE		(1 * MB) /* Defined in memmap.xmm */
 #define SRAM_STACK_SIZE		(1 * MB) /* Defined in memmap.xmm */
 #define SRAM_HEAP_SIZE		(4 * MB) /* Defined in memmap.xmm */
-#define VRING_BUFFER_SIZE	(64 * KB)
-#define VDEV_BUFFER_SIZE	(1 * MB)
+#define VRING_BUFFER_SIZE	(64 * KB)/* Defined in memmap.xmm */
+#define VDEV_BUFFER_SIZE	(1 * MB) /* --------------------- */
 
 #define SROM_DA			((uint32_t)&_memmap_mem_srom_start)
 #define SRAM_DA			((uint32_t)&_memmap_mem_sram_start)
-#define LOG_BUFFER_DA		(SRAM_DA + SRAM_SIZE)
-#define COMM_BUFFER_DA		(LOG_BUFFER_DA + LOG_BUFFER_SIZE)
-#define VDEV_BUFFER_DA		(COMM_BUFFER_DA + COMM_BUFFER_SIZE)
+#define LOG_BUFFER_DA		((uint32_t)&_log_start)
+#define VDEV_BUFFER_DA		((uint32_t)&_vdev_start)
 #define VDEV_RING0_DA		(VDEV_BUFFER_DA + VDEV_BUFFER_SIZE)
 #define VDEV_RING1_DA		(VDEV_RING0_DA + VRING_BUFFER_SIZE)
 #define SRAM_STACK_DA		((uint32_t)&_stack_sentry)
@@ -48,6 +46,9 @@ extern "C" {
 extern uint32_t _memmap_mem_srom_start;
 extern uint32_t _memmap_mem_sram_start;
 extern uint32_t _memmap_mem_sram_end;
+extern uint32_t _log_start;
+extern uint32_t _vdev_start;
+extern uint32_t _vdev_end;
 
 extern uint32_t _stack_sentry;
 extern uint32_t _heap_sentry;
@@ -64,7 +65,6 @@ struct remote_resource_table {
 	struct fw_rsc_carveout stack_hdr;
 	struct fw_rsc_carveout heap_hdr;
 	struct fw_rsc_carveout logbuf_hdr;
-	struct fw_rsc_carveout comm_hdr;
 	struct fw_rsc_carveout vdev0buffer_hdr;
 	struct fw_rsc_carveout vdev0ring0_hdr;
 	struct fw_rsc_carveout vdev0ring1_hdr;

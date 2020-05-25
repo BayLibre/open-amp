@@ -1,4 +1,4 @@
-/* This linker script generated from xt-genldscripts.tpp for LSP ../apps/system/generic/machine/xtensa */
+/* This linker script generated from xt-genldscripts.tpp for LSP . */
 /* Linker Script for ld -N */
 MEMORY
 {
@@ -18,6 +18,8 @@ MEMORY
   sram11_seg :                        	org = 0x600002B8, len = 0x48
   sram12_seg :                        	org = 0x60000300, len = 0x40
   sram13_seg :                        	org = 0x60000340, len = 0x3FFCC0
+  sram14_seg :                        	org = 0x60400000, len = 0x100000
+  sram15_seg :                        	org = 0x60500000, len = 0x200000
   dram0_0_seg :                       	org = 0x7FF00000, len = 0x20000
   dram1_0_seg :                       	org = 0x7FF20000, len = 0x20000
   iram0_0_seg :                       	org = 0x7FF40000, len = 0x40000
@@ -44,6 +46,8 @@ PHDRS
   sram13_bss_phdr PT_LOAD;
   sram14_phdr PT_LOAD;
   sram15_phdr PT_LOAD;
+  sram16_phdr PT_LOAD;
+  sram17_phdr PT_LOAD;
   dram0_0_phdr PT_LOAD;
   dram0_0_bss_phdr PT_LOAD;
   dram1_0_phdr PT_LOAD;
@@ -101,6 +105,10 @@ _memmap_seg_sram12_start = 0x60000300;
 _memmap_seg_sram12_max   = 0x60000340;
 _memmap_seg_sram13_start = 0x60000340;
 _memmap_seg_sram13_max   = 0x60400000;
+_memmap_seg_sram14_start = 0x60400000;
+_memmap_seg_sram14_max   = 0x60500000;
+_memmap_seg_sram15_start = 0x60500000;
+_memmap_seg_sram15_max   = 0x60700000;
 _memmap_seg_dram0_0_start = 0x7ff00000;
 _memmap_seg_dram0_0_max   = 0x7ff20000;
 _memmap_seg_dram1_0_start = 0x7ff20000;
@@ -291,12 +299,32 @@ SECTIONS
   } >sram12_seg :sram12_phdr
 
 
-  _end = 0x60400000;
-  PROVIDE(end = 0x60400000);
-  _heap_sentry = 0x60800000;
+  .log : ALIGN(4)
+  {
+    _log_start = ABSOLUTE(.);
+    *(.log)
+    . = ALIGN (4);
+    _log_end = ABSOLUTE(.);
+    _memmap_seg_sram14_end = ALIGN(0x8);
+  } >sram14_seg :sram14_phdr
 
-  _stack_sentry = 0x60900000;
-  PROVIDE(__stack = 0x60a00000);
+
+  .vdev : ALIGN(4)
+  {
+    _vdev_start = ABSOLUTE(.);
+    *(.vdev)
+    . = ALIGN (4);
+    _vdev_end = ABSOLUTE(.);
+    _memmap_seg_sram15_end = ALIGN(0x8);
+  } >sram15_seg :sram15_phdr
+
+
+  _end = 0x60700000;
+  PROVIDE(end = 0x60700000);
+  _heap_sentry = 0x60b00000;
+
+  _stack_sentry = 0x60b00000;
+  PROVIDE(__stack = 0x60c00000);
 
   .dram0.rodata : ALIGN(4)
   {

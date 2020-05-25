@@ -1,4 +1,4 @@
-/* This linker script generated from xt-genldscripts.tpp for LSP ../apps/system/generic/machine/xtensa */
+/* This linker script generated from xt-genldscripts.tpp for LSP . */
 /* Linker Script for ld -r or ld -i */
 
 

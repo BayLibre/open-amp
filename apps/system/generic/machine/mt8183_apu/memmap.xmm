@@ -71,8 +71,10 @@ BEGIN sram
  sram11 : C : 0x600002b8 - 0x600002ff : .DoubleExceptionVector.literal;
  sram12 : F : 0x60000300 - 0x6000033f : .DoubleExceptionVector.text;
  sram13 : C : 0x60000340 - 0x603fffff : .resource_table .sram.rodata .clib.rodata .rtos.rodata .rodata .sram.literal .literal .rtos.literal .clib.literal .sram.text .text .clib.text .rtos.text .clib.data .clib.percpu.data .rtos.percpu.data .rtos.data .sram.data .data __llvm_prf_names .clib.bss .clib.percpu.bss .rtos.percpu.bss .rtos.bss .sram.bss .bss;
- sram14 : C : 0x60400000 - 0x607fffff :  HEAP :;
- sram15 : C : 0x60900000 - 0x609fffff :  STACK :;
+sram14 : C : 0x60400000 - 0x604fffff : .log;
+sram15 : C : 0x60500000 - 0x606fffff : .vdev;
+sram16 : C : 0x60700000 - 0x60afffff :  HEAP :;
+sram17 : C : 0x60b00000 - 0x60bfffff :  STACK :;
 END sram
 
 BEGIN dram0

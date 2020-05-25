@@ -29,7 +29,6 @@ struct remote_resource_table s_table __attribute__((section (".resource_table"))
 		offsetof(struct remote_resource_table, stack_hdr),
 		offsetof(struct remote_resource_table, heap_hdr),
 		offsetof(struct remote_resource_table, logbuf_hdr),
-		offsetof(struct remote_resource_table, comm_hdr),
 		offsetof(struct remote_resource_table, vdev0buffer_hdr),
 		offsetof(struct remote_resource_table, vdev0ring0_hdr),
 		offsetof(struct remote_resource_table, vdev0ring1_hdr),
@@ -79,15 +78,6 @@ struct remote_resource_table s_table __attribute__((section (".resource_table"))
 		.len = LOG_BUFFER_SIZE,
 		.flags = IOMMU_READ|IOMMU_WRITE|IOMMU_NOEXEC,
 		.name = "Log buffer",
-		.reserved = 0,
-	},
-	.comm_hdr = {
-		.type = RSC_CARVEOUT,
-		.da = COMM_BUFFER_DA,
-		.pa = FW_RSC_ADDR_ANY,
-		.len = COMM_BUFFER_SIZE,
-		.flags = IOMMU_READ|IOMMU_WRITE|IOMMU_NOEXEC,
-		.name = "comm",
 		.reserved = 0,
 	},
 	.vdev0buffer_hdr = {
