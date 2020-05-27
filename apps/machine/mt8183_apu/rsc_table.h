@@ -19,7 +19,7 @@ extern "C" {
 #define IOMMU_NOEXEC		(1 << 3)
 #define IOMMU_MMIO		(1 << 4)
 
-#define NO_RESOURCE_ENTRIES         10
+#define NO_RESOURCE_ENTRIES         11
 
 #define KB			(1024)
 #define MB			(KB * KB)
@@ -55,6 +55,15 @@ extern uint32_t _vdev_end;
 extern uint32_t _stack_sentry;
 extern uint32_t _heap_sentry;
 
+METAL_PACKED_BEGIN
+struct fw_rsc_iova {
+	uint32_t type;
+	uint32_t da;
+	uint32_t len;
+	uint32_t reserved;
+	uint8_t name[RPROC_MAX_NAME_LEN];
+} METAL_PACKED_END;
+
 /* Resource table for the given remote */
 struct remote_resource_table {
 	unsigned int version;
@@ -62,6 +71,7 @@ struct remote_resource_table {
 	unsigned int reserved[2];
 	unsigned int offset[NO_RESOURCE_ENTRIES];
 
+	struct fw_rsc_iova iova_hdr;
 	struct fw_rsc_carveout srom_hdr;
 	struct fw_rsc_carveout sram_hdr;
 	struct fw_rsc_carveout stack_hdr;

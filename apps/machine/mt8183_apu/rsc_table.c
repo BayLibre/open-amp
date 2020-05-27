@@ -24,6 +24,7 @@ struct remote_resource_table s_table __attribute__((section (".resource_table"))
 	.num = NO_RESOURCE_ENTRIES,
 	.reserved = {0, 0},
 	.offset = {
+		offsetof(struct remote_resource_table, iova_hdr),
 		offsetof(struct remote_resource_table, srom_hdr),
 		offsetof(struct remote_resource_table, sram_hdr),
 		offsetof(struct remote_resource_table, stack_hdr),
@@ -34,6 +35,12 @@ struct remote_resource_table s_table __attribute__((section (".resource_table"))
 		offsetof(struct remote_resource_table, vdev0ring1_hdr),
 		offsetof(struct remote_resource_table, trace_hdr),
 		offsetof(struct remote_resource_table, rpmsg_vdev),
+	},
+	.iova_hdr = {
+		.type = 128,
+		.da = 0x60000000,
+		.len = 0x10000000,
+		.name = "IOVA",
 	},
 	.srom_hdr = {
 		.type = RSC_CARVEOUT,
