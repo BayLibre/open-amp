@@ -65,12 +65,19 @@ static struct remoteproc * platform_create_proc(int proc_index, int rsc_index)
 
 int platform_init(int argc, char *argv[], void **platform)
 {
+	struct remote_resource_table *table;
 	unsigned long proc_id = 0;
 	unsigned long rsc_id = 0;
 	struct remoteproc *rproc;
+	int len;
 
 	metal_unused(argc);
 	metal_unused(argv);
+
+	/* Initialize the logger */
+	table = get_resource_table(0, &len);
+	mt8183_trace_init((void *)table->logbuf_hdr.da, table->logbuf_hdr.len,
+			  METAL_LOG_INFO);
 
 	if (!platform) {
 		metal_log(METAL_LOG_ERROR, 
