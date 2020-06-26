@@ -3,7 +3,7 @@ CC=$(CROSS_COMPILE)gcc
 AR=$(CROSS_COMPILE)ar
 
 CFLAGS=-W -Wall -I../include
-LDFLAGS=-lapu -L.
+LDFLAGS=-lapu -L. -lpthread
 EXEC=libapu_test
 OBJ=apu.o memory.o ion.o
 HDR=../include/rich-iot/apu.h ../include/rich-iot/apu-host.h ../include/rich-iot/memory.h ion.h

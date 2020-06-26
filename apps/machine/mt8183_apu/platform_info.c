@@ -30,7 +30,7 @@ static struct remoteproc * platform_create_proc(int proc_index, int rsc_index)
 	rsc_table = get_resource_table(rsc_index, &rsc_size);
 
 	if (!remoteproc_init(&rproc_inst, &mt8183_rproc_ops, NULL))
-		return NULL;	
+		return NULL;
 
 	/*
 	 * Mmap resource table
@@ -98,7 +98,7 @@ int platform_init(int argc, char *argv[], void **platform)
 			  METAL_LOG_INFO);
 
 	if (!platform) {
-		metal_log(METAL_LOG_ERROR, 
+		metal_log(METAL_LOG_ERROR,
 			  "Failed to initialize platform,"
 			  "NULL pointer to store platform data.\n");
 		return -EINVAL;

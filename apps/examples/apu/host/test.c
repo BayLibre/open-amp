@@ -120,6 +120,7 @@ struct test_basic_args {
 	int size;
 };
 
+
 static int test_copy_shared_buffer(struct apu_device *dev, void *args)
 {
 	struct test_basic_args *p_args = args;
@@ -364,6 +365,40 @@ int run_tests(struct apu_device *dev, struct test *tests, int count)
 	return test_failed;
 }
 
+void callback(
+		struct apu_inline_buffer *inline_buffer,
+		struct apu_buffer **buffers, int count,
+		int result, void *data)
+{
+	(void) inline_buffer;
+	(void) count;
+	int ret;
+
+	if (result)
+		goto free_request;
+
+	ret = apu_buffer_memcmp(*buffers, NULL, NULL);
+	if (ret)
+		printf("error\n");
+	else
+		printf("passed!\n");
+free_request:
+	apu_free_buffer(buffers[0]);
+	apu_device_quit((struct apu_device *)(data));
+}
+
+int async_test(struct apu_device *dev)
+{
+	struct apu_buffer *buffer1;
+	int ret;
+
+	buffer1 = apu_buffer_alloc_init(dev, 10, 0x12, 0, 0);
+	if (!buffer1)
+		return -ENOMEM;
+	ret = apu_exec_async(dev, TEST_COPY_SHARED_BUFFER, NULL, &buffer1, 1, callback, dev);
+	return ret;
+}
+
 /* Main - Call the ioctl functions */
 int main(int argc, char *argv[])
 {
@@ -397,6 +432,8 @@ int main(int argc, char *argv[])
 	printf ("%d / %d passed\n", total_test_count - test_failed,
 		total_test_count);
 
+	async_test(dev);
+	apu_device_loop(dev);
 	apu_device_close(dev);
 
 	return 0;

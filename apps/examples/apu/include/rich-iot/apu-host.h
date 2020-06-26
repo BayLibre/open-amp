@@ -11,6 +11,8 @@
 struct apu_device {
 	int apu_fd;
 	int ion_fd;
+	int stop;
+	pthread_t main_loop_thread;
 };
 
 /**
@@ -115,7 +117,20 @@ void *apu_inline_buffer_in_read(struct apu_inline_buffer *buffer, size_t *len);
 void *apu_inline_buffer_out_read(struct apu_inline_buffer *buffer, size_t *len);
 
 /*
- * @brief Send a command to execute on the device
+ * @brief Callback to register that will be called when asynchronous request are done
+ * @arg inline_buffer pointer to the inline_buffer that was used for the request
+ * @arg buffers pointer to the array of apu_buffer used for the request
+ * @arg count number of apu_buffer in buffers
+ * @arg data user data
+ */
+typedef void (*apu_callback) (
+		struct apu_inline_buffer *inline_buffer,
+		struct apu_buffer **buffers, int count,
+		int result, void *data);
+
+/*
+ * @brief Send a sync command to execute on the device
+ * @arg dev The apu device
  * @arg cmd The command id to execute on target
  * @arg inline_buffer a pointer to inline buffer or NULL if not used
  * @arg buffers an array of apu_buffer, could be NULL if not used
@@ -123,11 +138,28 @@ void *apu_inline_buffer_out_read(struct apu_inline_buffer *buffer, size_t *len);
  * @return 0 or a negative number in the case of error
  */
 int apu_exec(struct apu_device *dev, int cmd,
-	     struct apu_inline_buffer *inline_buffer,
-	     struct apu_buffer **buffers, int count);
+		struct apu_inline_buffer *inline_buffer,
+		struct apu_buffer **buffers, int count);
 
 /*
- * @brief Send a command to execute on the device
+ * @brief Send a async command to execute on the device
+ * @arg dev The apu device
+ * @arg cmd The command id to execute on target
+ * @arg inline_buffer User data to be sent to the device without using apu_buffer
+ * @arg buffers Array of apu_buffer
+ * @arg count The number of apu_buffer inside buffers
+ * @arg callback The function to call when request is executed
+ * @arg data Used data
+ * @return 0 or a negative number in the case of error
+ */
+int apu_exec_async(struct apu_device *dev, int cmd,
+		struct apu_inline_buffer *inline_buffer,
+		struct apu_buffer **buffers, int count,
+		apu_callback callback, void *data);
+
+/*
+ * @brief Send a sync command to execute on the device
+ * @arg dev The apu device
  * @arg cmd The command id to execute on target
  * @arg inline_buffer a pointer to inline buffer or NULL if not used
  * @arg count the number of apu_buffer to share with the APU
@@ -136,5 +168,23 @@ int apu_exec(struct apu_device *dev, int cmd,
  */
 int apu_vexec(struct apu_device *dev, int cmd,
 	      struct apu_inline_buffer *inline_buffer, int count, ...);
+
+/*
+ * @brief Start the main apu_device_loop
+ * It will block and wait for response from device.
+ * When response is received from device, the corresponding apu_callback is called
+ * @arg dev the apu_device
+ * @see apu_device_quit to stop the main loop
+ * @see apu_callback
+ */
+void apu_device_loop(struct apu_device *dev);
+
+/*
+ * @brief Quit the main apu_device_loop started with apu_device_loop
+ * It wills stop the main loop device, and app will not be notified for future response.
+ * @arg dev the apu_device
+ * @see apu_device_loop
+ */
+void apu_device_quit(struct apu_device *dev);
 
 #endif /* __RICH_IOT_NN_HOST_H__ */
