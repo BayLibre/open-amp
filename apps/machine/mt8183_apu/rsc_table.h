@@ -7,6 +7,7 @@
 #define RSC_TABLE_H_
 
 #include <stddef.h>
+#include <memory.h>
 #include <openamp/open_amp.h>
 
 #if defined __cplusplus
@@ -21,23 +22,14 @@ extern "C" {
 
 #define NO_RESOURCE_ENTRIES         11
 
-#define KB			(1024)
-#define MB			(KB * KB)
 #define SRAM_TOTAL_SIZE		(256 * MB)
-#define SROM_SIZE		(2 * MB) /* Defined in memmap.xmm */
-#define SRAM_SIZE		(1 * MB) /* Defined in memmap.xmm */
-#define LOG_BUFFER_SIZE		(1 * MB) /* Defined in memmap.xmm */
-#define SRAM_STACK_SIZE		(1 * MB) /* Defined in memmap.xmm */
-#define SRAM_HEAP_SIZE		(4 * MB) /* Defined in memmap.xmm */
-#define VRING_BUFFER_SIZE	(64 * KB)/* Defined in memmap.xmm */
-#define VDEV_BUFFER_SIZE	(1 * MB) /* --------------------- */
 
 #define SROM_DA			((uint32_t)&_memmap_mem_srom_start)
 #define SRAM_DA			((uint32_t)&_memmap_mem_sram_start)
 #define LOG_BUFFER_DA		((uint32_t)&_log_start)
 #define VDEV_BUFFER_DA		((uint32_t)&_vdev_start)
-#define VDEV_RING0_DA		(VDEV_BUFFER_DA + VDEV_BUFFER_SIZE)
-#define VDEV_RING1_DA		(VDEV_RING0_DA + VRING_BUFFER_SIZE)
+#define VDEV_RING0_DA		((uint32_t)&_vring0_start)
+#define VDEV_RING1_DA		((uint32_t)&_vring1_start)
 #define SRAM_STACK_DA		((uint32_t)&_stack_sentry)
 #define SRAM_HEAP_DA		((uint32_t)&_heap_sentry - SRAM_HEAP_SIZE)
 
@@ -50,7 +42,8 @@ extern uint32_t _resource_table_start;
 extern uint32_t _resource_table_end;
 extern uint32_t _log_start;
 extern uint32_t _vdev_start;
-extern uint32_t _vdev_end;
+extern uint32_t _vring0_start;
+extern uint32_t _vring1_start;
 
 extern uint32_t _stack_sentry;
 extern uint32_t _heap_sentry;

@@ -17,9 +17,11 @@ MEMORY
   sram10_seg :                        	org = 0x60000280, len = 0x38
   sram11_seg :                        	org = 0x600002B8, len = 0x48
   sram12_seg :                        	org = 0x60000300, len = 0x40
-  sram13_seg :                        	org = 0x60000340, len = 0x3FFCC0
-  sram14_seg :                        	org = 0x60400000, len = 0x100000
-  sram15_seg :                        	org = 0x60500000, len = 0x200000
+  sram13_seg :                        	org = 0x60000340, len = 0xFFCC0
+  sram15_seg :                        	org = 0x60100000, len = 0x8000
+  sram16_seg :                        	org = 0x60108000, len = 0x8000
+  sram14_seg :                        	org = 0x60110000, len = 0x100000
+  sram17_seg :                        	org = 0x60210000, len = 0x200000
   dram0_0_seg :                       	org = 0x7FF00000, len = 0x20000
   dram1_0_seg :                       	org = 0x7FF20000, len = 0x20000
   iram0_0_seg :                       	org = 0x7FF40000, len = 0x40000
@@ -44,10 +46,12 @@ PHDRS
   sram12_phdr PT_LOAD;
   sram13_phdr PT_LOAD;
   sram13_bss_phdr PT_LOAD;
-  sram14_phdr PT_LOAD;
   sram15_phdr PT_LOAD;
   sram16_phdr PT_LOAD;
+  sram14_phdr PT_LOAD;
   sram17_phdr PT_LOAD;
+  sram19_phdr PT_LOAD;
+  sram18_phdr PT_LOAD;
   dram0_0_phdr PT_LOAD;
   dram0_0_bss_phdr PT_LOAD;
   dram1_0_phdr PT_LOAD;
@@ -104,11 +108,15 @@ _memmap_seg_sram11_max   = 0x60000300;
 _memmap_seg_sram12_start = 0x60000300;
 _memmap_seg_sram12_max   = 0x60000340;
 _memmap_seg_sram13_start = 0x60000340;
-_memmap_seg_sram13_max   = 0x60400000;
-_memmap_seg_sram14_start = 0x60400000;
-_memmap_seg_sram14_max   = 0x60500000;
-_memmap_seg_sram15_start = 0x60500000;
-_memmap_seg_sram15_max   = 0x60700000;
+_memmap_seg_sram13_max   = 0x60100000;
+_memmap_seg_sram15_start = 0x60100000;
+_memmap_seg_sram15_max   = 0x60108000;
+_memmap_seg_sram16_start = 0x60108000;
+_memmap_seg_sram16_max   = 0x60110000;
+_memmap_seg_sram14_start = 0x60110000;
+_memmap_seg_sram14_max   = 0x60210000;
+_memmap_seg_sram17_start = 0x60210000;
+_memmap_seg_sram17_max   = 0x60410000;
 _memmap_seg_dram0_0_start = 0x7ff00000;
 _memmap_seg_dram0_0_max   = 0x7ff20000;
 _memmap_seg_dram1_0_start = 0x7ff20000;
@@ -299,14 +307,24 @@ SECTIONS
   } >sram12_seg :sram12_phdr
 
 
-  .log : ALIGN(4)
+  .vring0 : ALIGN(4)
   {
-    _log_start = ABSOLUTE(.);
-    *(.log)
+    _vring0_start = ABSOLUTE(.);
+    *(.vring0)
     . = ALIGN (4);
-    _log_end = ABSOLUTE(.);
-    _memmap_seg_sram14_end = ALIGN(0x8);
-  } >sram14_seg :sram14_phdr
+    _vring0_end = ABSOLUTE(.);
+    _memmap_seg_sram15_end = ALIGN(0x8);
+  } >sram15_seg :sram15_phdr
+
+
+  .vring1 : ALIGN(4)
+  {
+    _vring1_start = ABSOLUTE(.);
+    *(.vring1)
+    . = ALIGN (4);
+    _vring1_end = ABSOLUTE(.);
+    _memmap_seg_sram16_end = ALIGN(0x8);
+  } >sram16_seg :sram16_phdr
 
 
   .vdev : ALIGN(4)
@@ -315,16 +333,26 @@ SECTIONS
     *(.vdev)
     . = ALIGN (4);
     _vdev_end = ABSOLUTE(.);
-    _memmap_seg_sram15_end = ALIGN(0x8);
-  } >sram15_seg :sram15_phdr
+    _memmap_seg_sram14_end = ALIGN(0x8);
+  } >sram14_seg :sram14_phdr
 
 
-  _end = 0x60700000;
-  PROVIDE(end = 0x60700000);
-  _heap_sentry = 0x60b00000;
+  .log : ALIGN(4)
+  {
+    _log_start = ABSOLUTE(.);
+    *(.log)
+    . = ALIGN (4);
+    _log_end = ABSOLUTE(.);
+    _memmap_seg_sram17_end = ALIGN(0x8);
+  } >sram17_seg :sram17_phdr
 
-  _stack_sentry = 0x60b00000;
-  PROVIDE(__stack = 0x60c00000);
+
+  _stack_sentry = 0x60410000;
+  PROVIDE(__stack = 0x60510000);
+
+  _end = 0x60510000;
+  PROVIDE(end = 0x60510000);
+  _heap_sentry = 0x60910000;
 
   .dram0.rodata : ALIGN(4)
   {
