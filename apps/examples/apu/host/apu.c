@@ -55,7 +55,7 @@ void apu_device_close(struct apu_device *dev)
 }
 
 struct apu_inline_buffer *apu_inline_buffer(void *data_in, size_t size_in,
-	     				    size_t size_out, int flags)
+		size_t size_out, int flags)
 {
 	struct apu_inline_buffer *buffer;
 
@@ -114,8 +114,7 @@ size_t apu_inline_buffer_size(struct apu_inline_buffer *buffer)
 
 void *apu_inline_buffer_in_read(struct apu_inline_buffer *buffer, size_t *len)
 {
-	if (buffer->flags & INLINE_BUFFER_RW)
-	{
+	if (buffer->flags & INLINE_BUFFER_RW) {
 		if (len)
 			*len = buffer->size_in;
 		return buffer->data_in;
