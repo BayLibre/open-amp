@@ -3,7 +3,7 @@
 MEMORY
 {
   srom0_seg :                         	org = 0x50000000, len = 0x300
-  srom1_seg :                         	org = 0x50000300, len = 0xFFFD00
+  srom1_seg :                         	org = 0x50000300, len = 0x1FFD00
   sram0_seg :                         	org = 0x60000000, len = 0x178
   sram1_seg :                         	org = 0x60000178, len = 0x8
   sram2_seg :                         	org = 0x60000180, len = 0x38
@@ -17,11 +17,11 @@ MEMORY
   sram10_seg :                        	org = 0x60000280, len = 0x38
   sram11_seg :                        	org = 0x600002B8, len = 0x48
   sram12_seg :                        	org = 0x60000300, len = 0x40
-  sram13_seg :                        	org = 0x60000340, len = 0xFFCC0
-  sram15_seg :                        	org = 0x60100000, len = 0x8000
-  sram16_seg :                        	org = 0x60108000, len = 0x8000
-  sram14_seg :                        	org = 0x60110000, len = 0x100000
-  sram17_seg :                        	org = 0x60210000, len = 0x200000
+  sram13_seg :                        	org = 0x60000340, len = 0x5FFCC0
+  sram15_seg :                        	org = 0x60600000, len = 0x8000
+  sram16_seg :                        	org = 0x60608000, len = 0x8000
+  sram14_seg :                        	org = 0x60610000, len = 0x100000
+  sram17_seg :                        	org = 0x60710000, len = 0x100000
   dram0_0_seg :                       	org = 0x7FF00000, len = 0x20000
   dram1_0_seg :                       	org = 0x7FF20000, len = 0x20000
   iram0_0_seg :                       	org = 0x7FF40000, len = 0x40000
@@ -80,7 +80,7 @@ _memmap_mem_iram0_end   = 0x7ff80000;
 _memmap_seg_srom0_start = 0x50000000;
 _memmap_seg_srom0_max   = 0x50000300;
 _memmap_seg_srom1_start = 0x50000300;
-_memmap_seg_srom1_max   = 0x51000000;
+_memmap_seg_srom1_max   = 0x50200000;
 _memmap_seg_sram0_start = 0x60000000;
 _memmap_seg_sram0_max   = 0x60000178;
 _memmap_seg_sram1_start = 0x60000178;
@@ -108,15 +108,15 @@ _memmap_seg_sram11_max   = 0x60000300;
 _memmap_seg_sram12_start = 0x60000300;
 _memmap_seg_sram12_max   = 0x60000340;
 _memmap_seg_sram13_start = 0x60000340;
-_memmap_seg_sram13_max   = 0x60100000;
-_memmap_seg_sram15_start = 0x60100000;
-_memmap_seg_sram15_max   = 0x60108000;
-_memmap_seg_sram16_start = 0x60108000;
-_memmap_seg_sram16_max   = 0x60110000;
-_memmap_seg_sram14_start = 0x60110000;
-_memmap_seg_sram14_max   = 0x60210000;
-_memmap_seg_sram17_start = 0x60210000;
-_memmap_seg_sram17_max   = 0x60410000;
+_memmap_seg_sram13_max   = 0x60600000;
+_memmap_seg_sram15_start = 0x60600000;
+_memmap_seg_sram15_max   = 0x60608000;
+_memmap_seg_sram16_start = 0x60608000;
+_memmap_seg_sram16_max   = 0x60610000;
+_memmap_seg_sram14_start = 0x60610000;
+_memmap_seg_sram14_max   = 0x60710000;
+_memmap_seg_sram17_start = 0x60710000;
+_memmap_seg_sram17_max   = 0x60810000;
 _memmap_seg_dram0_0_start = 0x7ff00000;
 _memmap_seg_dram0_0_max   = 0x7ff20000;
 _memmap_seg_dram1_0_start = 0x7ff20000;
@@ -190,7 +190,7 @@ SECTIONS
   .Level2InterruptVector.literal : ALIGN(4)
   {
     _Level2InterruptVector_literal_start = ABSOLUTE(.);
-    *(.Level2InterruptVector.literal)
+    KEEP (*(.Level2InterruptVector.literal))
     . = ALIGN (4);
     _Level2InterruptVector_literal_end = ABSOLUTE(.);
     _memmap_seg_sram1_end = ALIGN(0x8);
@@ -210,7 +210,7 @@ SECTIONS
   .DebugExceptionVector.literal : ALIGN(4)
   {
     _DebugExceptionVector_literal_start = ABSOLUTE(.);
-    *(.DebugExceptionVector.literal)
+    KEEP (*(.DebugExceptionVector.literal))
     . = ALIGN (4);
     _DebugExceptionVector_literal_end = ABSOLUTE(.);
     _memmap_seg_sram3_end = ALIGN(0x8);
@@ -230,7 +230,7 @@ SECTIONS
   .NMIExceptionVector.literal : ALIGN(4)
   {
     _NMIExceptionVector_literal_start = ABSOLUTE(.);
-    *(.NMIExceptionVector.literal)
+    KEEP (*(.NMIExceptionVector.literal))
     . = ALIGN (4);
     _NMIExceptionVector_literal_end = ABSOLUTE(.);
     _memmap_seg_sram5_end = ALIGN(0x8);
@@ -250,7 +250,7 @@ SECTIONS
   .KernelExceptionVector.literal : ALIGN(4)
   {
     _KernelExceptionVector_literal_start = ABSOLUTE(.);
-    *(.KernelExceptionVector.literal)
+    KEEP (*(.KernelExceptionVector.literal))
     . = ALIGN (4);
     _KernelExceptionVector_literal_end = ABSOLUTE(.);
     _memmap_seg_sram7_end = ALIGN(0x8);
@@ -270,7 +270,7 @@ SECTIONS
   .UserExceptionVector.literal : ALIGN(4)
   {
     _UserExceptionVector_literal_start = ABSOLUTE(.);
-    *(.UserExceptionVector.literal)
+    KEEP (*(.UserExceptionVector.literal))
     . = ALIGN (4);
     _UserExceptionVector_literal_end = ABSOLUTE(.);
     _memmap_seg_sram9_end = ALIGN(0x8);
@@ -290,7 +290,7 @@ SECTIONS
   .DoubleExceptionVector.literal : ALIGN(4)
   {
     _DoubleExceptionVector_literal_start = ABSOLUTE(.);
-    *(.DoubleExceptionVector.literal)
+    KEEP (*(.DoubleExceptionVector.literal))
     . = ALIGN (4);
     _DoubleExceptionVector_literal_end = ABSOLUTE(.);
     _memmap_seg_sram11_end = ALIGN(0x8);
@@ -347,12 +347,12 @@ SECTIONS
   } >sram17_seg :sram17_phdr
 
 
-  _stack_sentry = 0x60410000;
-  PROVIDE(__stack = 0x60510000);
+  _stack_sentry = 0x60810000;
+  PROVIDE(__stack = 0x60910000);
 
-  _end = 0x60510000;
-  PROVIDE(end = 0x60510000);
-  _heap_sentry = 0x60910000;
+  _end = 0x60910000;
+  PROVIDE(end = 0x60910000);
+  _heap_sentry = 0x60d10000;
 
   .dram0.rodata : ALIGN(4)
   {
