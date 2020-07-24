@@ -1,0 +1,17 @@
+collector_list (_sources APP_COMMON_SOURCES)
+list (APPEND _sources "${CMAKE_CURRENT_SOURCE_DIR}/xrp_dsp.c")
+list (APPEND _sources "${CMAKE_CURRENT_SOURCE_DIR}/xrp_ns.c")
+
+add_library (xrp-static STATIC ${_sources})
+set_source_files_properties(${_sources} PROPERTIES COMPILE_FLAGS "${_cflags} -DLIBAPU")
+set_target_properties (xrp-static PROPERTIES OUTPUT_NAME xrp)
+install (TARGETS xrp-static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+include_directories (${_list} ${_app_list} ${CMAKE_CURRENT_SOURCE_DIR}/../../include/xrp)
+
+set (OPENAMP_LIB open_amp)
+set (LIB_apu apu)
+set (LIB_xrp xrp)
+set (_app xrp_test)
+add_executable (${_app}.elf "${CMAKE_CURRENT_SOURCE_DIR}/dsp_test.c")
+target_link_libraries(${_app}.elf -Wl,-Map=${_app}.map -Wl,--gc-sections ${_linker_opt} -Wl,--start-group open_amp-static apu-static xrp-static metal ${_deps} -Wl,--end-group)
+install (TARGETS ${_app}.elf RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

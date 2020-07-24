@@ -27,7 +27,9 @@
 #include <string.h>
 #include "xrp_api.h"
 #include "example_namespace.h"
-#include "xrp_debug.h"
+#include <stdio.h>
+
+#define pr_debug printf
 
 void xrp_run_command(const void *in_data, size_t in_data_size,
 		     void *out_data, size_t out_data_size,
@@ -175,11 +177,13 @@ static enum xrp_status test_ns(struct xrp_device *device)
 	return XRP_STATUS_SUCCESS;
 }
 
+void xrp_hw_init(void);
 void __attribute__((constructor)) dsp_test_register(void)
 {
 	enum xrp_status status;
 	struct xrp_device *device;
 
+	xrp_hw_init();
 	device = xrp_open_device(0, &status);
 	if (status != XRP_STATUS_SUCCESS) {
 		pr_debug("xrp_open_device failed\n");
@@ -206,4 +210,19 @@ err_release:
 	xrp_release_device(device);
 	if (status != XRP_STATUS_SUCCESS)
 		abort();
+}
+
+int main(void)
+{
+	enum xrp_status status;
+	struct xrp_device *device;
+
+	device = xrp_open_device(0, &status);
+	if (status != XRP_STATUS_SUCCESS) {
+		fprintf(stderr, "xrp_open_device failed\n");
+		abort();
+	}
+	while(1);
+
+	return 0;
 }

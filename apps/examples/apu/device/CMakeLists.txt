@@ -12,3 +12,5 @@ set (_app rity_nn_test)
 add_executable (${_app}.elf "${CMAKE_CURRENT_SOURCE_DIR}/test.c")
 target_link_libraries(${_app}.elf -Wl,-Map=${_app}.map -Wl,--gc-sections ${_linker_opt} -Wl,--start-group open_amp-static apu-static metal ${_deps} -Wl,--end-group)
 install (TARGETS ${_app}.elf RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+add_subdirectory(xrp)

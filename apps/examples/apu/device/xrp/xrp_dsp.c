@@ -25,16 +25,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <xtensa/xtruntime.h>
-
-#include "xrp_api.h"
-#include "xrp_debug.h"
-#include "xrp_dsp_hw.h"
-#include "xrp_dsp_sync.h"
-#include "xrp_dsp_user.h"
 #include "xrp_ns.h"
-#include "xrp_types.h"
-#include "xrp_kernel_dsp_interface.h"
+#include "xrp_api.h"
+
+#include <metal/cache.h>
+#include <metal/log.h>
+#include <metal/sys.h>
+#include <rich-iot/apu-device.h>
 
 extern char xrp_dsp_comm_base_magic[] __attribute__((weak));
 void *xrp_dsp_comm_base = &xrp_dsp_comm_base_magic;
@@ -43,6 +40,7 @@ static int manage_cache;
 
 #define MAX_STACK_BUFFERS 16
 #define MAX_TLV_LENGTH 0x10000
+#define MAX_BUFFER_GROUP 128
 
 /* DSP side XRP API implementation */
 
@@ -52,7 +50,7 @@ struct xrp_refcounted {
 
 struct xrp_device {
 	struct xrp_refcounted ref;
-	void *dsp_cmd;
+	struct apu_device device;
 };
 
 struct xrp_buffer {
@@ -70,11 +68,30 @@ struct xrp_buffer_group {
 	struct xrp_buffer *buffer;
 };
 
+#ifdef LIBAPU
+#define XRP_DSP_CMD_INLINE_BUFFER_COUNT 1
+#endif
+
+static struct xrp_device *dev = NULL;
 static struct xrp_cmd_ns_map ns_map;
+#ifndef LIBAPU
 static size_t dsp_hw_queue_entry_size = XRP_DSP_CMD_STRIDE;
 static struct xrp_device dsp_device0;
 static int n_dsp_devices;
 static struct xrp_device **dsp_device;
+#endif
+
+
+static uint16_t xrp_handler(struct apu_device *device,
+			    void *data_in, uint16_t *size_in,
+			    void *data_out, uint16_t *size_out,
+			    void **buffer, uint32_t *buffer_size,
+			    uint16_t *count);
+
+static struct apu_handler apu_handlers[] = {
+	APU_HANDLER(0, xrp_handler),
+	APU_HANDLER(0, NULL),
+};
 
 void xrp_device_enable_cache(struct xrp_device *device, int enable)
 {
@@ -116,18 +133,27 @@ static void release_refcounted(struct xrp_refcounted *ref)
 
 struct xrp_device *xrp_open_device(int idx, enum xrp_status *status)
 {
-	if (idx == 0) {
-		dsp_device0.dsp_cmd = xrp_dsp_comm_base;
+	(void)idx;
+
+	set_status(status, XRP_STATUS_FAILURE);
+
+	if (dev) {
 		set_status(status, XRP_STATUS_SUCCESS);
-		return &dsp_device0;
-	} else if (idx < n_dsp_devices) {
-		xrp_retain_device(dsp_device[idx]);
-		set_status(status, XRP_STATUS_SUCCESS);
-		return dsp_device[idx];
-	} else {
-		set_status(status, XRP_STATUS_FAILURE);
-		return NULL;
+		xrp_retain_device(dev);
+		return dev;
 	}
+
+	dev = malloc(sizeof(*dev));
+	if (!dev)
+		return NULL;
+
+	xrp_retain_device(dev);
+	xrp_device_enable_cache(dev, true);
+
+	apu_init(&dev->device, apu_handlers);
+	set_status(status, XRP_STATUS_SUCCESS);
+
+	return dev;
 }
 
 void xrp_retain_device(struct xrp_device *device)
@@ -296,6 +322,7 @@ out:
 
 /* DSP side request handling */
 
+#ifndef LIBAPU
 static int update_hw_queues(uint32_t queue_priority[], int n)
 {
 	if (xrp_user_create_queues) {
@@ -446,6 +473,7 @@ static enum xrp_access_flags dsp_buffer_allowed_access(__u32 flags)
 	return flags == XRP_DSP_BUFFER_FLAG_READ ?
 		XRP_READ : XRP_READ_WRITE;
 }
+#endif
 
 void xrp_run_command(const void *in_data, size_t in_data_size,
 		     void *out_data, size_t out_data_size,
@@ -480,6 +508,7 @@ xrp_run_command_handler(void *handler_context,
 	return status;
 }
 
+#ifndef LIBAPU
 static enum xrp_status process_command(struct xrp_device *device,
 				       uint32_t flags)
 {
@@ -611,6 +640,107 @@ out:
 	complete_request(dsp_cmd, flags);
 	return status;
 }
+#endif
+
+struct xrp_inline_buffer_group {
+	uint32_t da;
+	uint32_t size;
+};
+
+struct xrp_inline_data
+{
+	uint32_t size_in;
+	uint32_t size_out;
+	uint32_t n_buffers;
+	uint8_t nsid[XRP_NAMESPACE_ID_SIZE];
+	struct xrp_inline_buffer_group group[MAX_BUFFER_GROUP];
+
+	uint8_t data[0];
+}  __packed;
+
+struct apu_device;
+enum xrp_status libapu_process_command(struct apu_device *device,
+				       void **apu_buffers, size_t *buffer_size)
+{
+	enum xrp_status status;
+	struct xrp_buffer_group buffer_group;
+	xrp_command_handler *command_handler = xrp_run_command_handler;
+	void *handler_context = NULL;
+	struct xrp_inline_data *inline_data = apu_buffers[0];
+	size_t n_buffers = inline_data->n_buffers;
+	struct xrp_buffer sbuffer[n_buffers <= MAX_STACK_BUFFERS ? n_buffers : 1];
+	struct xrp_buffer *buffer = sbuffer;
+	uint8_t default_nsid[XRP_NAMESPACE_ID_SIZE] = { 0 };
+	size_t i;
+
+	(void)device;
+
+	metal_machine_cache_invalidate(apu_buffers[0],
+				       buffer_size[0]);
+
+	if (memcmp(inline_data->nsid, default_nsid, XRP_NAMESPACE_ID_SIZE)) {
+		struct xrp_cmd_ns *cmd_ns = xrp_find_cmd_ns(&ns_map,
+							    inline_data->nsid);
+		if (xrp_cmd_ns_match(inline_data->nsid, cmd_ns)) {
+			command_handler = cmd_ns->handler;
+			handler_context = cmd_ns->handler_context;
+		} else {
+//			flags |= XRP_DSP_CMD_FLAG_RESPONSE_DELIVERY_FAIL;
+			status = XRP_STATUS_FAILURE;
+			goto out;
+		}
+	}
+
+	if (n_buffers > MAX_STACK_BUFFERS) {
+		buffer = malloc(n_buffers * sizeof(*buffer));
+		if (!buffer) {
+			status = XRP_STATUS_FAILURE;
+			goto out;
+		}
+	}
+
+	/* Create buffers from incoming buffer data, put them to group.
+	 * Passed flags add some restrictions to possible buffer mapping
+	 * modes:
+	 * R only allows R
+	 * W and RW allow R, W or RW
+	 * (actually W only allows W and RW, but that's hard to express and
+	 * is not particularly useful)
+	 */
+	for (i = 0; i < n_buffers; ++i) {
+		buffer[i] = (struct xrp_buffer){
+			.allowed_access = XRP_READ_WRITE,
+			.ptr = (void *)inline_data->group[i].da,
+			.size = inline_data->group[i].size,
+		};
+		metal_machine_cache_invalidate(buffer[i].ptr, buffer[i].size);
+	}
+
+	buffer_group = (struct xrp_buffer_group){
+		.n_buffers = n_buffers,
+		.buffer = buffer,
+	};
+
+	status = command_handler(handler_context,
+				 inline_data->data, inline_data->size_in,
+				 inline_data->data + inline_data->size_in,
+				 inline_data->size_out, &buffer_group);
+
+	for (i = 0; i < n_buffers; ++i)
+		metal_machine_cache_flush(buffer[i].ptr, buffer[i].size);
+
+	if (n_buffers > MAX_STACK_BUFFERS) {
+		free(buffer);
+	}
+
+	metal_machine_cache_flush(apu_buffers[0],
+				  buffer_size[0]);
+
+out:
+	return status;
+}
+
+
 
 void xrp_device_register_namespace(struct xrp_device *device,
 				   const void *nsid,
@@ -637,6 +767,7 @@ void xrp_device_unregister_namespace(struct xrp_device *device,
 		set_status(status, XRP_STATUS_FAILURE);
 }
 
+#ifndef LIBAPU
 enum xrp_status xrp_device_poll(struct xrp_device *device)
 {
 	uint32_t flags;
@@ -648,22 +779,62 @@ enum xrp_status xrp_device_poll(struct xrp_device *device)
 	else
 		return XRP_STATUS_PENDING;
 }
+#endif
 
 enum xrp_status xrp_device_dispatch(struct xrp_device *device)
 {
-	uint32_t flags;
+	(void)device;
+
+	return XRP_STATUS_PENDING;
+}
+
+void xrp_hw_send_host_irq(void)
+{
+}
+
+void xrp_hw_wait_device_irq(void)
+{
+}
+
+void xrp_hw_set_sync_data(void *p)
+{
+	(void)p;
+}
+
+void xrp_hw_panic(void)
+{
+}
+
+void xrp_hw_init(void)
+{
+}
+
+static uint16_t xrp_handler(struct apu_device *device,
+			    void *data_in, uint16_t *size_in,
+			    void *data_out, uint16_t *size_out,
+			    void **buffer, uint32_t *buffer_size,
+			    uint16_t *count)
+{
 	enum xrp_status status;
+	(void)data_in;
+	(void)data_out;
+	(void)size_in;
+	(void)size_out;
+	(void)count;
 
-	dcache_region_invalidate(device->dsp_cmd,
-				 sizeof(struct xrp_dsp_cmd));
-	if (!xrp_request_valid(device->dsp_cmd, &flags))
-		return XRP_STATUS_PENDING;
+	status = libapu_process_command(device, buffer, buffer_size);
 
-	if (flags == XRP_DSP_SYNC_START) {
-		do_handshake(device);
-		status = XRP_STATUS_SUCCESS;
-	} else {
-		status = process_command(device, flags);
-	}
 	return status;
+}
+
+int printf(const char *p, ...)
+{
+	int len;
+	va_list args;
+
+	va_start(args, p);
+	len = mt8183_vprintf(p, args);
+	va_end(args);
+
+	return len;
 }

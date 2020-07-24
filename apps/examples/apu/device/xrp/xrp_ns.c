@@ -24,8 +24,16 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-#include "xrp_debug.h"
 #include "xrp_ns.h"
+#include <stdio.h>
+
+#if defined(LIBAPU)
+#if defined(DEBUG)
+#define pr_debug printf
+#else
+#define pr_debug(...)
+#endif
+#endif
 
 static int compare_cmd_ns(const void *nsid, struct xrp_cmd_ns *cmd_ns)
 {
