@@ -71,6 +71,14 @@ struct apu_buffer *apu_buffer_alloc_init(struct apu_device *dev,
 	return buffer;
 }
 
+int apu_null(void *ptr, int len)
+{
+	uint8_t null_buffer[len];
+
+	memset(null_buffer, 0, len);
+	return !memcmp(null_buffer, ptr, len);
+}
+
 int apu_buffer_memcmp(struct apu_buffer *buffer1, struct apu_buffer *buffer2,
 		      void *data)
 {
@@ -86,11 +94,14 @@ int apu_buffer_memcmp(struct apu_buffer *buffer1, struct apu_buffer *buffer2,
 	if (!buffer2 && !data) {
 		int len = buffer1->size / 2;
 		ret = memcmp(ptr1, ptr1 + len, len);
+		ret |= apu_null(ptr1, len);
 		goto put_buf1;
 	}
 
 	if (!buffer2 && data) {
 		ret = memcmp(ptr1, data, buffer1->size);
+		ret |= apu_null(ptr1, buffer1->size);
+		ret |= apu_null(data, buffer1->size);
 		goto put_buf1;
 	}
 
@@ -107,6 +118,8 @@ int apu_buffer_memcmp(struct apu_buffer *buffer1, struct apu_buffer *buffer2,
 	}
 
 	ret = memcmp(ptr1, ptr2, buffer1->size);
+	ret |= apu_null(ptr1, buffer1->size);
+	ret |= apu_null(ptr2, buffer1->size);
 
 	apu_put_buffer(buffer2);
 put_buf1:
@@ -392,7 +405,7 @@ int async_test(struct apu_device *dev)
 	struct apu_buffer *buffer1;
 	int ret;
 
-	buffer1 = apu_buffer_alloc_init(dev, 10, 0x12, 0, 0);
+	buffer1 = apu_buffer_alloc_init(dev, 256, 0x12, 128, 0);
 	if (!buffer1)
 		return -ENOMEM;
 	ret = apu_exec_async(dev, TEST_COPY_SHARED_BUFFER, NULL, &buffer1, 1, callback, dev);
