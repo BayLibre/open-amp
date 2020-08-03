@@ -37,6 +37,7 @@ struct sync_request_data {
 };
 
 static struct node *head;
+static pthread_mutex_t mutex;
 
 static void *apu_device_main_loop_th(void *arg);
 
@@ -56,8 +57,10 @@ static void add(struct apu_request *req,
 	new_node->callback = callback;
 	new_node->data = data;
 
+	pthread_mutex_lock(&mutex);
 	new_node->next = head;
 	head = new_node;
+	pthread_mutex_unlock(&mutex);
 }
 
 static struct node *pop(int id)
@@ -65,12 +68,17 @@ static struct node *pop(int id)
 	struct node *current = head;
 	struct node *previous = NULL;
 
-	if (head == NULL)
+	pthread_mutex_lock(&mutex);
+	if (head == NULL) {
+		pthread_mutex_unlock(&mutex);
 		return NULL;
+	}
 
 	while (current->req->id != id) {
-		if (current->next == NULL)
+		if (current->next == NULL) {
+			pthread_mutex_unlock(&mutex);
 			return NULL;
+		}
 		previous = current;
 		current = current->next;
 	}
@@ -80,6 +88,7 @@ static struct node *pop(int id)
 	else
 		previous->next = current->next;
 
+	pthread_mutex_unlock(&mutex);
 	return current;
 }
 
@@ -134,6 +143,7 @@ struct apu_device *apu_device_open(int device_id)
 
 	dev->stop = 0;
 
+	pthread_mutex_init(&mutex, NULL);
 	pthread_create(&dev->main_loop_thread, NULL, apu_device_main_loop_th, dev);
 
 	return dev;
