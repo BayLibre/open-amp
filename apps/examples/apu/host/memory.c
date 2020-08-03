@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -44,6 +45,7 @@ struct apu_buffer *apu_alloc_buffer(struct apu_device *dev, size_t size)
 	buffer->data_size = size;
 	buffer->mmap_refcount = 0;
 	buffer->sync_refcount = 0;
+	pthread_mutex_init(&buffer->lock, NULL);
 
 	return buffer;
 }
@@ -56,50 +58,70 @@ void apu_free_buffer(struct apu_buffer *buffer)
 
 void *apu_map_buffer(struct apu_buffer *buffer)
 {
+	pthread_mutex_lock(&buffer->lock);
 	if (buffer->mmap_refcount++ == 0) {
 		buffer->ptr = mmap(NULL, buffer->size, PROT_READ | PROT_WRITE,
 				   MAP_SHARED, buffer->fd, 0);
-		if(buffer->ptr == MAP_FAILED)
+		if (buffer->ptr == MAP_FAILED) {
+			pthread_mutex_unlock(&buffer->lock);
 			return NULL;
+		}
 	}
+	pthread_mutex_unlock(&buffer->lock);
 
 	return buffer->ptr;
 }
 
 int apu_unmap_buffer(struct apu_buffer *buffer)
 {
+	pthread_mutex_lock(&buffer->lock);
 	if (buffer->mmap_refcount-- == 1) {
 		int ret;
 
 		ret = munmap(buffer->ptr, buffer->size);
 		if (!ret)
 			buffer->ptr = NULL;
+		pthread_mutex_unlock(&buffer->lock);
+
 		return ret;
 	}
+	pthread_mutex_unlock(&buffer->lock);
 
 	return 0;
 }
 
 int apu_get_buffer_access(struct apu_buffer *buffer)
 {
+	pthread_mutex_lock(&buffer->lock);
 	if (buffer->sync_refcount++ == 0) {
 		struct dma_buf_sync sync_start = { 0 };
+		int ret;
 
 		sync_start.flags = DMA_BUF_SYNC_START | DMA_BUF_SYNC_RW;
-		return ioctl(buffer->fd, DMA_BUF_IOCTL_SYNC, &sync_start);
+		ret = ioctl(buffer->fd, DMA_BUF_IOCTL_SYNC, &sync_start);
+		pthread_mutex_unlock(&buffer->lock);
+
+		return ret;
 	}
+	pthread_mutex_unlock(&buffer->lock);
 
 	return 0;
 }
 
 int apu_put_buffer_access(struct apu_buffer *buffer)
 {
+	pthread_mutex_lock(&buffer->lock);
 	if (buffer->sync_refcount-- == 1) {
 		struct dma_buf_sync sync_start = { 0 };
+		int ret;
 
 		sync_start.flags = DMA_BUF_SYNC_END | DMA_BUF_SYNC_RW;
-		return ioctl(buffer->fd, DMA_BUF_IOCTL_SYNC, &sync_start);
+		ret = ioctl(buffer->fd, DMA_BUF_IOCTL_SYNC, &sync_start);
+		pthread_mutex_unlock(&buffer->lock);
+
+		return ret;
 	}
+	pthread_mutex_unlock(&buffer->lock);
 
 	return 0;
 }

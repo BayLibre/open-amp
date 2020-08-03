@@ -19,6 +19,7 @@ struct apu_buffer {
 	size_t size;
 	size_t data_size;
 
+	pthread_mutex_t lock;
 	int mmap_refcount;
 	int sync_refcount;
 };
