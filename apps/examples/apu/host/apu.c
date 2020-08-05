@@ -329,6 +329,9 @@ static void *apu_device_main_loop_th(void *arg)
 
 			ret = ioctl(pfd.fd, APU_GET_NEXT_AVAILABLE_IOCTL, &id);
 			if (ret < 0) {
+				if (ret == -ENOMSG)
+					continue;
+
 				printf("error during ioctl\n");
 				break;
 			}
