@@ -1,0 +1,20 @@
+cc_library_static {
+    name: "libapu",
+
+    srcs: [
+        "host/apu.c",
+        "host/memory.c",
+        "host/ion.c",
+        "host/xrp/xrp.c",
+    ],
+
+    local_include_dirs: [
+        "include",
+        "include/xrp",
+    ],
+    export_include_dirs: [
+        "include",
+        "include/xrp",
+    ],
+    vendor: true,
+}
