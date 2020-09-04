@@ -16,12 +16,14 @@
 struct apu_buffer {
 	int fd;
 	void *ptr;
+	uint32_t da;
 	size_t size;
 	size_t data_size;
 
 	pthread_mutex_t lock;
 	int mmap_refcount;
 	int sync_refcount;
+	int iommu_refcount;
 };
 
 /**
@@ -113,5 +115,10 @@ int apu_share_buffer(struct apu_buffer *buffer);
  * @return 0 on success, or a negative a value in the case of error
  */
 int apu_unshare_buffer(struct apu_buffer *buffer);
+
+uint32_t apu_iommu_map_buffer(struct apu_device *dev,
+			      struct apu_buffer *buffer);
+uint32_t apu_iommu_unmap_buffer(struct apu_device *dev,
+				struct apu_buffer *buffer);
 
 #endif /* __RICH_IOT_NN_MEMORY_H__ */

@@ -6,6 +6,8 @@
 #ifndef __RICH_IOT_NN_HOST_H__
 #define __RICH_IOT_NN_HOST_H__
 
+#include <stdint.h>
+
 #define INLINE_BUFFER_RW	1
 
 struct apu_device {

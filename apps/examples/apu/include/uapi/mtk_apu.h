@@ -25,9 +25,16 @@ struct apu_version {
 	__u16 minor;
 };
 
+struct apu_iommu_mmap {
+	uint32_t fd;
+	uint32_t da;
+};
+
 #define APU_VERSION_IOCTL	_IOWR(0xb7, 0x1, struct apu_version)
 #define APU_SEND_REQ_IOCTL	_IOW(0xb7, 0x2, struct apu_request)
 #define APU_GET_NEXT_AVAILABLE_IOCTL	_IOR(0xb7, 0x3, __u16)
 #define APU_GET_RESP_IOCTL	_IOWR(0xb7, 0x4, struct apu_request)
+#define APU_IOMMU_MMAP		_IOWR(0xb7, 0x5, struct apu_iommu_mmap)
+#define APU_IOMMU_MUNMAP	_IOWR(0xb7, 0x6, uint32_t)
 
 #endif

@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <uapi/dma-buf.h>
 #include <uapi/ion.h>
+#include <uapi/mtk_apu.h>
 
 #include <rich-iot/apu-host.h>
 #include <rich-iot/memory.h>
@@ -45,6 +46,7 @@ struct apu_buffer *apu_alloc_buffer(struct apu_device *dev, size_t size)
 	buffer->data_size = size;
 	buffer->mmap_refcount = 0;
 	buffer->sync_refcount = 0;
+	buffer->iommu_refcount = 0;
 	pthread_mutex_init(&buffer->lock, NULL);
 
 	return buffer;
@@ -150,6 +152,35 @@ int apu_put_buffer(struct apu_buffer *buffer)
 	ret = apu_unmap_buffer(buffer);
 	if (ret)
 		return ret;
+
+	return 0;
+}
+
+uint32_t apu_iommu_map_buffer(struct apu_device *dev,
+			      struct apu_buffer *buffer)
+{
+	if (buffer->iommu_refcount++ == 0) {
+		struct apu_iommu_mmap arg = { buffer->fd, 0 };
+		int ret;
+
+		ret = ioctl(dev->apu_fd, APU_IOMMU_MMAP, &arg);
+		if (ret)
+			return 0;
+
+		buffer->da = arg.da;
+	}
+
+	return buffer->da;
+}
+
+uint32_t apu_iommu_unmap_buffer(struct apu_device *dev,
+				struct apu_buffer *buffer)
+{
+	if (buffer->iommu_refcount-- == 1) {
+		uint32_t arg = buffer->fd;
+
+		return ioctl(dev->apu_fd, APU_IOMMU_MUNMAP, &arg);
+	}
 
 	return 0;
 }
