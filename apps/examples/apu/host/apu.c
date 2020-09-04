@@ -296,12 +296,12 @@ int apu_request_update_inline_buffer(struct apu_request *req,
 
 static void *apu_request_fd(struct apu_request *req)
 {
-	return req->data + req->size_in + req->size_out;
+	return ((uint8_t *)req->data) + req->size_in + req->size_out;
 }
 
 static void *apu_request_fd_size(struct apu_request *req)
 {
-	return apu_request_fd(req) + sizeof(uint32_t) * req->count;
+	return ((uint8_t *)apu_request_fd(req)) + sizeof(uint32_t) * req->count;
 }
 
 static void *apu_device_main_loop_th(void *arg)
