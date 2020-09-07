@@ -336,6 +336,68 @@ err_free_inline_buf:
 	return 0;
 }
 
+static int test_buffer_iommu_mmap(struct apu_device *dev, void *args)
+{
+	(void)args;
+	struct apu_inline_buffer *inline_buffer;
+	struct test_buffer_iommu_mmap test_buffer;
+	struct apu_buffer *buffer1, *buffer2;
+	uint32_t buffer1_da, buffer2_da;
+	int ret;
+
+	buffer1 = apu_buffer_alloc_init(dev, INLINE_BUFFER_SIZE_MAX, 0x12,
+					INLINE_BUFFER_SIZE_MAX, 0);
+	if (!buffer1)
+		return -ENOMEM;
+
+	buffer1_da = apu_iommu_map_buffer(dev, buffer1);
+	if (!buffer1_da) {
+		ret = -ENOMEM;
+		goto err_free_buffer1;
+	}
+
+	buffer2 = apu_buffer_alloc_init(dev, INLINE_BUFFER_SIZE_MAX, 0x15,
+					INLINE_BUFFER_SIZE_MAX, 0);
+	if (!buffer2) {
+		ret = -ENOMEM;
+		goto err_unmap_buffer1;
+	}
+
+	buffer2_da = apu_iommu_map_buffer(dev, buffer2);
+	if (!buffer2_da) {
+		ret = -ENOMEM;
+		goto err_free_buffer2;
+	}
+
+	test_buffer.buffer_in_da = buffer1_da;
+	test_buffer.buffer_out_da = buffer2_da;
+	test_buffer.size = INLINE_BUFFER_SIZE_MAX;
+	inline_buffer = apu_inline_buffer_in(&test_buffer, sizeof(test_buffer));
+	if (!inline_buffer) {
+		ret = -ENOMEM;
+		goto err_unmap_buffer2;
+	}
+
+	ret = apu_vexec(dev, TEST_BUFFER_IOMMU_MMAP, inline_buffer, 0);
+	if (ret)
+		goto err_free_inline_buf;
+
+	ret = apu_buffer_memcmp(buffer1, buffer2, NULL);
+
+err_free_inline_buf:
+	apu_inline_buffer_free(inline_buffer);
+err_unmap_buffer2:
+	apu_iommu_unmap_buffer(dev, buffer2);
+err_free_buffer2:
+	apu_free_buffer(buffer2);
+err_unmap_buffer1:
+	apu_iommu_unmap_buffer(dev, buffer1);
+err_free_buffer1:
+	apu_free_buffer(buffer1);
+
+	return ret;
+}
+
 struct test_basic_args test_basic_1_256 = {1, 256};
 struct test_basic_args test_basic_1_4096 = {1, 4096};
 struct test_basic_args test_basic_1_65535 = {1, 65535};
@@ -352,6 +414,7 @@ struct test tests[] = {
 	TEST_FUNCTION(test_copy_inline_to_shared_buffer, NULL),
 	TEST_FUNCTION(test_copy_shared_to_inline_buffer, NULL),
 	TEST_FUNCTION(test_fill_buffer, NULL),
+	TEST_FUNCTION(test_buffer_iommu_mmap, NULL),
 };
 
 struct test long_run_tests[] = {

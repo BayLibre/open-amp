@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <openamp/open_amp.h>
 #include <metal/alloc.h>
+#include <metal/cache.h>
 #include "platform_info.h"
 
 #include <rich-iot/apu-device.h>
@@ -154,12 +155,48 @@ static uint16_t test_fill_buffer(struct apu_device *device,
 	return 0;
 }
 
+static uint16_t test_buffer_iommu_mmap(struct apu_device *device,
+				       void *data_in, uint16_t *size_in,
+				       void *data_out, uint16_t *size_out,
+				       void **buffer, uint32_t *buffer_size,
+				       uint16_t *count)
+{
+	(void)device;
+	(void)data_out;
+	(void)size_out;
+	(void)buffer;
+	(void)buffer_size;
+	(void)count;
+	struct test_buffer_iommu_mmap *data;
+	uint8_t *buffer_in;
+	uint8_t *buffer_out;
+	uint32_t size;
+
+	if (!data_in || *size_in == 0)
+		return test_log_error(EINVAL);
+
+	if (*size_in != (sizeof(*data)))
+		return test_log_error(EINVAL);
+
+	data = data_in;
+	buffer_in = (uint8_t *)data->buffer_in_da;
+	buffer_out = (uint8_t *)data->buffer_out_da;
+	size = data->size;
+
+	metal_machine_cache_invalidate(buffer_in, size);
+	memcpy(buffer_out, buffer_in, size);
+	metal_machine_cache_flush(buffer_out, size);
+
+	return 0;
+}
+
 static struct apu_handler handlers[] = {
 	APU_HANDLER(TEST_COPY_SHARED_BUFFER, test_copy_shared_buffer),
 	APU_HANDLER(TEST_COPY_INLINE_BUFFER, test_copy_inline_buffer),
 	APU_HANDLER(TEST_COPY_INLINE2SHARED, test_copy_inline_to_shared_buffer),
 	APU_HANDLER(TEST_COPY_SHARED2INLINE, test_copy_shared_to_inline_buffer),
 	APU_HANDLER(TEST_FILL_BUFFER, test_fill_buffer),
+	APU_HANDLER(TEST_BUFFER_IOMMU_MMAP, test_buffer_iommu_mmap),
 	APU_HANDLER(0, NULL),
 };
 
